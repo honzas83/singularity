@@ -60,3 +60,6 @@ To build the image:
 export SINGULARITY_TMPDIR=...
 export SINGULARITY_CACHEDIR=...
 singularity build -f tensorflow24.12-r8.simg tensorflow24.12-r8.recipe
+```
+
+This results to in ~13GB image tensorflow24.12-r8.simg .
