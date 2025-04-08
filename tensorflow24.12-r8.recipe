@@ -1,0 +1,230 @@
+Bootstrap: docker
+From: nvcr.io/nvidia/tensorflow:24.12-tf2-py3
+
+%post
+    mkdir -p /local_tmp
+    export TMPDIR="/local_tmp"
+
+    # Base utils
+    apt-get update && apt-get install -y --fix-missing mc htop \
+		g++ \
+		make \
+		automake \
+		autoconf \
+		bzip2 \
+		unzip \
+		wget \
+		sox \
+		libtool \
+		git \
+                git-lfs \
+		subversion \
+		python3 \
+		python3-pip \
+		zlib1g-dev \
+		gfortran \
+		ca-certificates \
+		patch \
+		ffmpeg \
+	        vim \
+	        libsndfile-dev \
+                espeak-ng \
+                tmux \
+                ncdu \
+                libboost-program-options-dev \
+                libboost-system-dev \
+                libboost-thread-dev \
+                libboost-test-dev \
+                portaudio19-dev \
+                golang-go \
+		bc \
+    && apt-get clean
+
+    # Add LD paths
+    echo -e "/usr/local/cuda/compat/lib.real\n/usr/local/cuda/compat/lib.real\n/usr/local/cuda/extras/CUPTI/lib64\n/usr/local/cuda/compat/lib\n/usr/local/nvidia/lib\n/usr/local/nvidia/lib64\n/.singularity.d/libs" > /etc/ld.so.conf.d/singularity.conf
+    ldconfig
+
+    # Install KenLM
+    pushd /opt && \
+    git clone https://github.com/kpu/kenlm.git && \
+    mkdir -p /opt/kenlm/build && \
+    cd kenlm/build && \
+    cmake .. && make && make install && \
+    pip install --no-cache-dir https://github.com/kpu/kenlm/archive/master.zip && \
+    rm -rf /opt/kenlm && \
+    popd
+
+    # Install ollama
+    #pushd /opt && \
+    #git clone https://github.com/ollama/ollama.git && \
+    #mkdir -p /opt/ollama/build && \
+    #cd /opt/ollama/build && \
+    #cmake .. -DCMAKE_CUDA_ARCHITECTURES="61;75;86;89" && \
+    #cmake --build . --config Release -- -j8 && \
+    #make install && \
+    #cd /opt/ollama && \
+    #GOFLAGS="'-ldflags=-w -s'" CGO_ENABLED=1 go build -buildvcs=false -trimpath -buildmode=pie -o /usr/local/bin/ollama .
+    #rm -rvf ~/go/src/* ~/go/pkg/* ~/go/bin/* ~/go/pkg/mod/* \
+    #popd
+
+    #pushd /opt && \
+    #git clone https://github.com/ollama/ollama.git && \
+    #cd /opt/ollama/ && \
+    #cmake -DCMAKE_CUDA_ARCHITECTURES="61;70;75;80;86;87;89;90;90a" --preset 'CUDA 12' \
+    #    && cmake --build --preset 'CUDA 12' \
+    #    && cmake --install build --component CUDA --strip && \
+    #mkdir -p /usr/local/lib/ollama/cuda_v12 && \
+    #cp -r dist/lib/ollama/cuda_v12/* /usr/local/lib/ollama/cuda_v12 && \
+    #cd /opt/ollama && \
+    #GOFLAGS="'-ldflags=-w -s'" CGO_ENABLED=1 go build -buildvcs=false -trimpath -buildmode=pie -o /usr/local/bin/ollama .
+    #rm -rvf ~/go/src/* ~/go/pkg/* ~/go/bin/* ~/go/pkg/mod/* \
+    #popd
+    curl -fsSL https://ollama.com/install.sh | sh
+
+    # Build llama.cpp standalone
+    pushd /opt && \
+    git clone https://github.com/ggerganov/llama.cpp && \
+    cd llama.cpp && \
+    mkdir build && \
+    cd build && \
+    cmake .. -DBUILD_SHARED_LIBS=ON -DGGML_CUDA=ON -DGGML_CUDA_F16=on -DGGML_CUDA_ENABLE_UNIFIED_MEMORY=1 -DCMAKE_CUDA_ARCHITECTURES="61;75;86;89" && \
+    cmake --build . --config Release -- -j8 && \
+    make install && \
+    cd /opt/llama.cpp/gguf-py && \
+    pip --no-cache-dir install . && \
+    rm -rf /opt/llama.cpp && \
+    popd
+
+    # llama.cpp
+    #CMAKE_ARGS="-DGGML_CUDA=on -DGGML_CUDA_F16=on -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda" pip install llama-cpp-python
+    # Install llama-cpp-python with LLAMA_BUILD_OFF
+    CMAKE_ARGS="-DLLAMA_BUILD=OFF" pip --no-cache-dir install llama-cpp-python
+
+    pip uninstall jupyterlab nx-cugraph tensorflow-addons cudf dask-cudf cugraph --yes
+
+    pip freeze > /usr/local/pre-torch-env.txt
+
+    # Install PyTorch with CUDA 12.6
+    pip install --no-cache-dir torch==2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+
+    pip install Cython
+
+    # BERT & Transformers libraries
+    pip install --no-cache-dir \
+                torch==2.6.0 \
+                transformers==4.50.3 \
+                datasets==3.5.0 \
+                evaluate \
+                seqeval \
+                peft==0.15.1 \
+                trl==0.16.0 \
+                accelerate==1.6.0 \
+                bitsandbytes==0.45.4 \
+                tensorflow==2.17.0+nv24.12 \
+                protobuf==3.20.3 \
+                keras==3.8 \
+        	flax \
+                jax[cuda12]==0.5.0 \
+                ml-dtypes==0.4.1 \
+                numpy==1.26.4 \
+                scipy \
+                pyyaml==6.0.2 \
+                sentencepiece==0.2.0 \
+                pandas==2.2.2 \
+        	scikit-learn==1.6.0 \
+                biopython \
+                keras-bert \
+                keras-transformer \
+                librosa==0.9.2 \
+        	matplotlib \
+        	mlxtend \
+        	pydub \
+        	pyreaper \
+        	resampy \
+        	seaborn \
+        	xgboost \
+        	pysptk \
+        	pyworld \
+        	ffmpeg-normalize \
+        	phonemizer \
+        	ujson \
+        	more_itertools \
+        	papermill==2.6.0 \
+        	tensorboard \
+        	wandb \
+                sentence-transformers \
+                pyctcdecode \
+                jiwer \
+                pyannote.audio \
+                s3fs==2024.9.0 \
+                fsspec==2024.9.0 \
+                openai \
+                flash_attn \
+                liger-kernel \
+                ollama \
+                nvidia-ml-py3 \
+                xlstm \
+                git+https://github.com/openai/whisper.git \
+                einops_exts \
+                shortuuid
+
+
+    # speechbrain
+    pip install --no-cache-dir \
+                librosa==0.9.2 \
+                numpy==1.26.4 \
+                sentencepiece==0.2.0 \
+                protobuf==3.20.3 \
+                importlib-metadata==7.0.0 \
+        	speechbrain==1.0.2 \
+                pyyaml==6.0.2
+
+    # JMa dependencies 
+    pip install --no-cache-dir \
+                numba==0.59.1 \
+                llvmlite==0.42.0 \
+                inflect==7.5.0 \
+                tqdm \
+                anyascii \
+                pyyaml==6.0.2 \
+                s3fs==2024.9.0 \
+                fsspec==2024.9.0 \
+                aiohttp \
+                packaging \
+                flask \
+                pysbd \
+                umap-learn==0.5.1 \
+                pandas \
+                matplotlib \
+                num2words \
+                gruut[de,es,fr,ar,cs,en,it,nl,pt,ru,sv]==2.4.0 \
+                nltk \
+                bnnumerizer \
+                bnunicodenormalizer==0.1.7 \
+                k_diffusion \
+                einops \
+                encodec \
+                unidecode \
+                s3cmd \
+                gsutil \
+                mutagen \
+                lightning==2.5.0.post0 \
+                munch \
+                Pebble \
+                nvidia-ml-py \
+                torchmetrics \
+                torchinfo \
+                git+https://github.com/resemble-ai/monotonic_align.git
+
+    # Remove libcuda.so.1
+    pip uninstall --yes nvidia-nvtx-cu12 nvidia-nvjitlink-cu12 nvidia-nccl-cu12 nvidia-curand-cu12 nvidia-cufft-cu12 nvidia-cuda-runtime-cu12 nvidia-cuda-nvrtc-cu12 nvidia-cuda-cupti-cu12 nvidia-cublas-cu12 nvidia-cusparse-cu12 nvidia-cudnn-cu12 nvidia-cusolver-cu12 nvidia-cuda-nvcc-cu12 nvidia-dali-cuda120 nvidia-ml-py nvidia-nvimgcodec-cu12
+
+    ldconfig
+
+    # Upgrade the installed jupyterlab
+    pip install --no-cache-dir --upgrade notebook==7.4.0rc0 jupyterlab==4.4.0 ipywidgets
+
+    export TMPDIR="/tmp"
+    rm -rf /local_tmp
+
+    mkdir -p /storage /scratch 
