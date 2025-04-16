@@ -98,7 +98,7 @@ From: nvcr.io/nvidia/tensorflow:24.12-tf2-py3
     # llama.cpp
     #CMAKE_ARGS="-DGGML_CUDA=on -DGGML_CUDA_F16=on -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda" pip install llama-cpp-python
     # Install llama-cpp-python with LLAMA_BUILD_OFF
-    CMAKE_ARGS="-DLLAMA_BUILD=OFF" pip --no-cache-dir install llama-cpp-python
+    CMAKE_ARGS='-DBUILD_SHARED_LIBS=ON -DGGML_CUDA=ON -DGGML_CUDA_F16=on -DGGML_CUDA_ENABLE_UNIFIED_MEMORY=1 -DCMAKE_CUDA_ARCHITECTURES="61;75;86;89"' pip --no-cache-dir install llama-cpp-python numpy==1.26.4
 
     pip uninstall jupyterlab nx-cugraph tensorflow-addons cudf dask-cudf cugraph --yes
 
