@@ -4,6 +4,17 @@ This repository contains a build recipe for constructing a Singularity image bas
 
 The image is tailored for use on the Czech national academic infrastructure **MetaCentrum** and was built to support scientific research in artificial intelligence and machine learning, particularly in **speech technologies**, **natural language processing**, and **deep learning**.
 
+## Docker Compatibility & Use as AI/ML Foundation
+
+Although this project is Singularity-centric, the underlying setup is fully compatible with **Docker-based workflows**. The software stack, base image, and build logic can be easily transposed into a Dockerfile, making this repository a **perfect starting point for Dockerization** of:
+
+- AI/ML experimentation environments
+- Model training pipelines (including MLPs and transformers)
+- Reproducible research containers
+- GPU-accelerated inference and deployment setups
+
+This compatibility makes it highly adaptable for both academic HPC environments (Singularity) and cloud-native or on-prem setups (Docker).
+
 ## Author
 
 **Jan Švec**  
